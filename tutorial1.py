@@ -1,11 +1,14 @@
 import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-# os.environ['PATH'] += r"D:/Programming/PycharmProjects/SeleniumDrivers/chromedriver.exe"
-driver = webdriver.Chrome("D:/Programming/PycharmProjects/SeleniumDrivers/chromedriver.exe")
+# guide im following: https://www.youtube.com/watch?v=j7VZsCCnptM
 
-driver.get("https://www.memoryexpress.com/Category/VideoCards")
+driver = webdriver.Chrome("chromedriver.exe")
 
-item_container = driver.find_element(By.CLASS_NAME, 'c-shca-icon-item_body-name')
-print(item_container)
+driver.get("https://www.newegg.ca/d/Best-Sellers/Desktop-Graphics-Cards/s/ID-48")
+
+item_container = driver.find_element(By.CLASS_NAME, 'item-title')
+print(f"{item_container.text}")
