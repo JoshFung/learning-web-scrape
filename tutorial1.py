@@ -1,12 +1,15 @@
 import os
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 
 # guide im following: https://www.youtube.com/watch?v=j7VZsCCnptM
 
-driver = webdriver.Chrome(executable_path=os.environ['CHROMEDRIVER_PATH'])
+service = Service(executable_path=ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service)
 
 driver.get("https://www.newegg.ca/d/Best-Sellers/Desktop-Graphics-Cards/s/ID-48")
 
