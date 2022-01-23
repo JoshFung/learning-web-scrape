@@ -1,16 +1,14 @@
 import os
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# IMPORT TO TIME SCRIPT
+# TODO: remove this -- IMPORT TO TIME SCRIPT
 from datetime import datetime
-
 start_time = datetime.now()
 
 # guide im following: https://www.youtube.com/watch?v=j7VZsCCnptM
@@ -21,7 +19,9 @@ chrome_options.page_load_strategy = 'eager'
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
-# driver.implicitly_wait(5)
+
+html = driver.page_source
+soup = BeautifulSoup(html, 'lxml')
 
 
 def newegg():
@@ -32,7 +32,9 @@ def newegg():
 
 
 def grab_items():
-    all_items = driver.find_elements(By.CLASS_NAME, 'item-container')
+    # all_items = driver.find_elements(By.CLASS_NAME, 'item-container')
+    all_items = soup.find_all('div', {'class': 'item-container'})
+
     for item in all_items:
         try:
             item.find_element(By.CLASS_NAME, 'item-sponsored-box')
@@ -74,4 +76,5 @@ newegg()
 # close chromedriver
 driver.quit()
 
+# TODO: remove this
 print(f"TIME: {datetime.now() - start_time}")
