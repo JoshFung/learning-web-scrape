@@ -1,5 +1,6 @@
 import os
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -18,14 +19,19 @@ chrome_options = Options()
 chrome_options.page_load_strategy = 'eager'
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
-driver.get("https://www.newegg.ca/d/Best-Sellers/Desktop-Graphics-Cards/s/ID-48")
+driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708")
 # driver.implicitly_wait(5)
 
 
 def grab_items():
     all_items = driver.find_elements(By.CLASS_NAME, 'item-container')
     for item in all_items:
-        item_details(item)
+
+        try:
+            item.find_element(By.CLASS_NAME, 'item-sponsored-box')
+            print("Sponsored item skipped...")
+        except NoSuchElementException:
+            item_details(item)
 
 
 def item_details(item):
