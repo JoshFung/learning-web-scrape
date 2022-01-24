@@ -59,12 +59,15 @@ def item_details(item):
     item_title = item.find('a', {'class': 'item-title'}).text
     item_shipping = item.find('li', {'class': 'price-ship'}).text
 
+    # TODO: fix this please
     item_normal_price = item.find('li', {'class': 'price-was'}).text
-    if item_normal_price is not None:
+    # not on sale
+    if item_normal_price == '':
+        item_normal_price = item.find('li', {'class': 'price-current'}).text.split()[0]
+    else:
+        item_normal_price = item_normal_price.split()[0]
         item_sale_price = item.find('li', {'class': 'price-current'}).text
         item_percentage_saved = item.find('li', {'class': 'price-save'}).text
-    else:
-        item_normal_price = item.find('li', {'class': 'price-current'}).text
 
     item_rating = item.find('i', {'class': 'rating'})
     if item_rating is not None:
@@ -73,6 +76,12 @@ def item_details(item):
     else:
         item_rating = "no rating"
         num_ratings = "no ratings"
+
+    out_of_stock = False
+    item_promo = item.find('p', {'class': 'item-promo'})
+    if item_promo == "OUT OF STOCK":
+        item_promo = None
+        out_of_stock = True
 
     # print(f'ITEM: {item_title} -- '
     #       f'NORMAL PRICE: {item_normal_price} -- '
