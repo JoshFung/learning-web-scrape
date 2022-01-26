@@ -15,22 +15,21 @@ from datetime import datetime
 
 start_time = datetime.now()
 
-# guide im following: https://www.youtube.com/watch?v=j7VZsCCnptM
-
 service = Service(executable_path=ChromeDriverManager().install())
 chrome_options = Options()
-chrome_options.page_load_strategy = 'eager'
+chrome_options.page_load_strategy = 'normal'
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
 
+count = 0
 
 def newegg():
     more_items = True
     while more_items:
 
         # TODO: first delay
-        sleep(randint(1, 5))
+        # sleep(randint(1, 5))
 
         html = driver.page_source
         soup = BeautifulSoup(html, 'lxml')
@@ -39,15 +38,11 @@ def newegg():
 
 
 def grab_items(soup):
-    # all_items = driver.find_elements(By.CLASS_NAME, 'item-container')
     all_items = soup.find_all('div', {'class': 'item-container'})
 
     for item in all_items:
-        # try:
-        #     item.find_element(By.CLASS_NAME, 'item-sponsored-box')
-        #     print("Sponsored item skipped...")
-        # except NoSuchElementException:
-        #     item_details(item)
+        global count
+        count += 1
         if item.find('div', {'class': 'item-sponsored-box'}) is not None:
             print("Sponsored item skipped...")
         else:
@@ -55,44 +50,59 @@ def grab_items(soup):
 
 
 def item_details(item):
+    item_normal_price, item_sale_price, item_brand, item_rating, item_promo, item_shipping = (False,)*6
 
+    # name
     item_title = item.find('a', {'class': 'item-title'}).text
-    item_shipping = item.find('li', {'class': 'price-ship'}).text
 
-    # TODO: fix this please
-    item_normal_price = item.find('li', {'class': 'price-was'}).text
-    # not on sale
-    if item_normal_price == '':
-        item_normal_price = item.find('li', {'class': 'price-current'}).text.split()[0]
+    # shipping price
+    item_shipping = item.find('li', {'class': 'price-ship'}).getText().partition(" ")[0]
+
+    # brand
+    item_brand = item.find('a', {'class': 'item-brand'})
+    if item_brand is not None:
+        item_brand = item_brand.find('img')['title']
+
+    # normal price, sale price, and percentage saved
+    item_normal_price = item.find('li', {'class': 'price-was'})
+    # not on sale (empty array)
+    if item_normal_price is None or item_normal_price.getText() == '':
+        item_normal_price = item.find('li', {'class': 'price-current'}).getText()
+        item_normal_price = item_normal_price.split()[0] if item_normal_price != '' else False
     else:
-        item_normal_price = item_normal_price.split()[0]
-        item_sale_price = item.find('li', {'class': 'price-current'}).text
-        item_percentage_saved = item.find('li', {'class': 'price-save'}).text
+        item_normal_price = item_normal_price.getText().split()[0]
+        item_sale_price = item.find('li', {'class': 'price-current'}).getText().split()[0]
 
+    # rating and num of ratings
     item_rating = item.find('i', {'class': 'rating'})
     if item_rating is not None:
         item_rating = item_rating['aria-label'].split(' ')[1]
-        num_ratings = item.find('span', {'class': 'item-rating-num'}).text.strip('()')
-    else:
-        item_rating = "no rating"
-        num_ratings = "no ratings"
+        num_ratings = item.find('span', {'class': 'item-rating-num'}).getText().strip('()')
 
+    # promo and OOS
     out_of_stock = False
     item_promo = item.find('p', {'class': 'item-promo'})
     if item_promo == "OUT OF STOCK":
         item_promo = None
         out_of_stock = True
+    elif item_promo is not None:
+        item_promo = item_promo.getText()
 
-    # print(f'ITEM: {item_title} -- '
-    #       f'NORMAL PRICE: {item_normal_price} -- '
-    #       f'{f"SALE PRICE: {item_sale_price} --" if item_sale_price else ""} '
-    #       f'SHIPPING: {item_shipping}')
+    print(f'ITEM: {item_title}\n'
+          f'    {f"NORMAL PRICE: {item_normal_price}" if item_normal_price else ""}\n'
+          f'    {f"SALE PRICE: {item_sale_price}" if item_sale_price else ""}\n'
+          f'    {f"RATING: {item_rating} OUT OF {num_ratings} RATINGS" if item_rating else ""}\n'
+          f'    {f"BRAND: {item_brand}" if item_brand else ""}\n'
+          f'    {f"SHIPPING: {item_shipping}" if item_shipping else ""}\n'
+          )
+    #       f'    {f"PROMO: {item_promo}" if item_promo else "" }\n'
+    #       f'    OUT OF STOCK: {out_of_stock}\n'
 
 
 def next_page():
     # make sure it loads in (otherwise it can throw an error)
     try:
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'list-tool-pagination-text')))
+        WebDriverWait(driver, 25).until(EC.presence_of_element_located((By.CLASS_NAME, 'list-tool-pagination-text')))
     except TimeoutException:
         driver.quit()
 
@@ -104,7 +114,7 @@ def next_page():
     print(current_page)
 
     # TODO: second delay
-    sleep(randint(1, 5))
+    # sleep(randint(1, 5))
 
     if current_page != total_pages:
         driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/'
@@ -114,6 +124,7 @@ def next_page():
 
 
 newegg()
+print(count)
 
 # close chromedriver
 driver.quit()
