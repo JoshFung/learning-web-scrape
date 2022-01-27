@@ -1,3 +1,4 @@
+import pandas as pd
 from bs4 import BeautifulSoup
 from random import randint
 from selenium import webdriver
@@ -15,14 +16,34 @@ from datetime import datetime
 
 start_time = datetime.now()
 
+# ------------------------------------------------------------------------
 service = Service(executable_path=ChromeDriverManager().install())
 chrome_options = Options()
 chrome_options.page_load_strategy = 'normal'
 driver = webdriver.Chrome(service=service, options=chrome_options)
-
-driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
-
+driver.get("https://www.newegg.ca/p/pl?PageSize=60&N=100007708")
+# driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
+# ------------------------------------------------------------------------
 count = 0
+
+item_list = []
+entry = {}
+entry.update({'Store': 'Newegg'})
+entry.update({'Item': 'ASUS ROG Strix Radeon RX 590 8GB GDDR5 CrossFireX Support Video Card ROG-STRIX-RX590-8G-GAMING'})
+entry.update({'Brand': 'ASUS'})
+entry.update({'Normal Price': '$1,377.00'})
+entry.update({'Sale Price': '$900.00'})
+entry.update({'Rating': '5 / 40 ratings'})
+entry.update({'Shipping': '$5.99'})
+entry.update({'Promo': 'Xbox game pass for 1 month'})
+entry.update({'Out of Stock': False})
+# entry = {'Newegg', 'ASUS ROG Strix Radeon RX 590 8GB GDDR5 CrossFireX Support Video Card ROG-STRIX-RX590-8G-GAMING', 'ASUS',
+#            '$1,377.00', '$900.00', '5 / 40 ratings', '$5.99', 'Xbox game pass for 1 month', False}
+item_list.append(entry)
+df = pd.DataFrame(item_list, columns=['Store', 'Item', 'Brand', 'Normal Price', 'Sale Price', 'Rating', 'Shipping', 'Promo',
+                           'Out of Stock'])
+df.to_csv('out.csv')
+
 
 def newegg():
     more_items = True
@@ -87,18 +108,18 @@ def item_details(item):
         out_of_stock = True
     elif item_promo is not None:
         item_promo = item_promo.getText()
-
-    print(f'ITEM: {item_title}\n'
-          f'    {f"NORMAL PRICE: {item_normal_price}" if item_normal_price else ""}\n'
-          f'    {f"SALE PRICE: {item_sale_price}" if item_sale_price else ""}\n'
-          f'    {f"RATING: {item_rating} OUT OF {num_ratings} RATINGS" if item_rating else ""}\n'
-          f'    {f"BRAND: {item_brand}" if item_brand else ""}\n'
-          f'    {f"SHIPPING: {item_shipping}" if item_shipping else ""}\n'
-          )
-    #       f'    {f"PROMO: {item_promo}" if item_promo else "" }\n'
-    #       f'    OUT OF STOCK: {out_of_stock}\n'
-
-
+#
+#     print(f'ITEM: {item_title}\n'
+#           f'    {f"NORMAL PRICE: {item_normal_price}" if item_normal_price else ""}\n'
+#           f'    {f"SALE PRICE: {item_sale_price}" if item_sale_price else ""}\n'
+#           f'    {f"RATING: {item_rating} OUT OF {num_ratings} RATINGS" if item_rating else ""}\n'
+#           f'    {f"BRAND: {item_brand}" if item_brand else ""}\n'
+#           f'    {f"SHIPPING: {item_shipping}" if item_shipping else ""}\n'
+#           f'    {f"PROMO: {item_promo}" if item_promo else "" }\n'
+#           f'    OUT OF STOCK: {out_of_stock}\n'
+#           )
+#
+#
 def next_page():
     # make sure it loads in (otherwise it can throw an error)
     try:
@@ -117,8 +138,10 @@ def next_page():
     # sleep(randint(1, 5))
 
     if current_page != total_pages:
-        driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/'
-                                      'div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
+        # driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/'
+        #                               'div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
+        driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div/div[2]/div/div/'
+                                      'div[3]/div/div/div[11]/button').click()
         return True
     return False
 
