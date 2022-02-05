@@ -29,14 +29,10 @@ driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7
 
 def newegg():
     more_items = True
-    conn = sql.connect('items.db')
+    conn = sql.connect('src/databases/items.db')
     c = conn.cursor()
-    # c.execute("""
-    #     CREATE TABLE items (store text, item text, brand text, normal_price real, sale_price real, rating real, shipping real, promo text, out_of_stock text)
-    #     """)
-    c.execute("")
     c.execute("""
-        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating, promo)
+        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating, promo, out_of_stock)
         """)
     while more_items:
 
@@ -101,17 +97,16 @@ def get_rating(item):
         return (item_rating + ' (' + num_ratings + ')')
 
 
-# def get_promo(item, entry):
-#     item_promo = item.find('p', {'class': 'item-promo'})
-#     if item_promo is not None:
-#         item_promo = item_promo.getText()
-#         if item_promo == "OUT OF STOCK":
-#             entry.update({'Out of Stock': 'True'})
-#         else:
-#             entry.update({'Promo': item_promo})
-#             entry.update({'Out of Stock': 'False'})
-#     else:
-#         entry.update({'Out of Stock': 'False'})
+def get_promo(item):
+    promo = item.find('p', {'class': 'item-promo'})
+    if promo is not None:
+        promo = promo.getText()
+        if promo == "OUT OF STOCK":
+            return ('', 'Yes')
+        else:
+            return (promo, 'No')
+    else:
+        return ('', 'No')
 
 
 def create_record(item, cursor):
@@ -124,7 +119,11 @@ def create_record(item, cursor):
     sale_price = prices[1]
     rating = get_rating(item)
     promo = get_promo(item)
-    cursor.execute('''INSERT INTO items (store, item, brand, shipping, normal_price, sale_price, rating, promo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (store, name, brand, shipping, normal_price, sale_price, rating, promo))
+    out_of_stock = promo[1]
+    promo = promo[0]
+    cursor.execute('''
+    INSERT INTO items (store, item, brand, shipping, normal_price, sale_price, rating, promo, out_of_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+    (store, name, brand, shipping, normal_price, sale_price, rating, promo, out_of_stock))
 
 
 def next_page():
@@ -156,4 +155,4 @@ newegg()
 driver.quit()
 
 # TODO: remove this
-# print(f"TIME: {datetime.now() - start_time}")
+print(f"TIME: {datetime.now() - start_time}")
