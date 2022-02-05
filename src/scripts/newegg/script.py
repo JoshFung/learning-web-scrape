@@ -36,7 +36,7 @@ def newegg():
     #     """)
     c.execute("")
     c.execute("""
-        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT)
+        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating, promo)
         """)
     while more_items:
 
@@ -80,25 +80,25 @@ def get_shipping(item):
     return float(shipping)
     
 
-# def get_price(item, entry):
-#     item_normal_price = item.find('li', {'class': 'price-was'})
-#     # not on sale (empty array)
-#     if item_normal_price is None or item_normal_price.getText() == '':
-#         item_normal_price = item.find('li', {'class': 'price-current'}).getText()
-#         item_normal_price = item_normal_price.split()[0] if item_normal_price != '' else False
-#     else:
-#         item_normal_price = item_normal_price.getText().split()[0]
-#         item_sale_price = item.find('li', {'class': 'price-current'}).getText().split()[0]
-#         entry.update({'Sale Price': item_sale_price})
-#     entry.update({'Normal Price': item_normal_price})
+def get_price(item):
+    normal_price = item.find('li', {'class': 'price-was'})
+    # not on sale (empty array)
+    if normal_price is None or normal_price.getText() == '':
+        normal_price = item.find('li', {'class': 'price-current'}).getText()
+        normal_price = normal_price.split()[0] if normal_price != '' else False
+        return (normal_price, '')
+    normal_price = normal_price.getText().split()[0]
+    sale_price = item.find('li', {'class': 'price-current'}).getText()
+    sale_price = sale_price.split()[0] if sale_price != '' else False
+    return (normal_price, sale_price)
 
 
-# def get_rating(item, entry):
-#     item_rating = item.find('i', {'class': 'rating'})
-#     if item_rating is not None:
-#         item_rating = item_rating['aria-label'].split(' ')[1]
-#         num_ratings = item.find('span', {'class': 'item-rating-num'}).getText().strip('()')
-#         entry.update({'Rating': item_rating + ' (' + num_ratings + ')'})
+def get_rating(item):
+    item_rating = item.find('i', {'class': 'rating'})
+    if item_rating is not None:
+        item_rating = item_rating['aria-label'].split(' ')[1]
+        num_ratings = item.find('span', {'class': 'item-rating-num'}).getText().strip('()')
+        return (item_rating + ' (' + num_ratings + ')')
 
 
 # def get_promo(item, entry):
@@ -115,15 +115,16 @@ def get_shipping(item):
 
 
 def create_record(item, cursor):
-    # item_entry = {}
     store = 'Newegg'
     name = get_name(item)
     brand = get_brand(item)
     shipping = get_shipping(item)
-    # get_price(item, item_entry)
-    # get_rating(item, item_entry)
-    # get_promo(item, item_entry)
-    cursor.execute('''INSERT INTO items (store, item, brand, shipping) VALUES (?, ?, ?, ?)''', (store, name, brand, shipping))
+    prices = get_price(item)
+    normal_price = prices[0]
+    sale_price = prices[1]
+    rating = get_rating(item)
+    promo = get_promo(item)
+    cursor.execute('''INSERT INTO items (store, item, brand, shipping, normal_price, sale_price, rating, promo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (store, name, brand, shipping, normal_price, sale_price, rating, promo))
 
 
 def next_page():
