@@ -1,4 +1,3 @@
-import pandas as pd
 from bs4 import BeautifulSoup
 from random import randint
 from selenium import webdriver
@@ -29,10 +28,10 @@ driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7
 
 def newegg():
     more_items = True
-    conn = sql.connect('src/databases/items.db')
+    conn = sql.connect('src/databases/items2.db')
     c = conn.cursor()
     c.execute("""
-        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating, promo, out_of_stock)
+        CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating TEXT, promo TEXT, out_of_stock TEXT)
         """)
     while more_items:
 
@@ -68,11 +67,13 @@ def get_brand(item):
 
 
 def get_shipping(item):
-    shipping = item.find('li', {'class': 'price-ship'}).getText().partition(" ")[0].strip('$ ')
-    if shipping in ['Free', 'Special']:
+    shipping = item.find('li', {'class': 'price-ship'}).getText().partition(" ")[0].strip('$ ').replace(',', '')
+    if shipping == 'Free':
         shipping = 0
     elif shipping == '':
         return ''
+    elif shipping == 'Special':
+        return 'Special'
     return float(shipping)
     
 
@@ -81,20 +82,20 @@ def get_price(item):
     # not on sale (empty array)
     if normal_price is None or normal_price.getText() == '':
         normal_price = item.find('li', {'class': 'price-current'}).getText()
-        normal_price = normal_price.split()[0] if normal_price != '' else False
-        return (normal_price, '')
-    normal_price = normal_price.getText().split()[0]
+        normal_price = normal_price.split()[0].strip('$ ').replace(',', '') if normal_price != '' else ''
+        return (float(normal_price) if not normal_price == '' else '', '')
+    normal_price = normal_price.getText().split()[0].strip('$ ').replace(',', '')
     sale_price = item.find('li', {'class': 'price-current'}).getText()
-    sale_price = sale_price.split()[0] if sale_price != '' else False
-    return (normal_price, sale_price)
+    sale_price = sale_price.split()[0].strip('$ ').replace(',', '') if sale_price != '' else ''
+    return (float(normal_price) if not normal_price == '' else '', float(sale_price) if not sale_price == '' else '')
 
 
 def get_rating(item):
-    item_rating = item.find('i', {'class': 'rating'})
-    if item_rating is not None:
-        item_rating = item_rating['aria-label'].split(' ')[1]
+    rating = item.find('i', {'class': 'rating'})
+    if rating is not None:
+        rating = rating['aria-label'].split(' ')[1]
         num_ratings = item.find('span', {'class': 'item-rating-num'}).getText().strip('()')
-        return (item_rating + ' (' + num_ratings + ')')
+        return (rating + ' (' + num_ratings + ')')
 
 
 def get_promo(item):
@@ -114,13 +115,9 @@ def create_record(item, cursor):
     name = get_name(item)
     brand = get_brand(item)
     shipping = get_shipping(item)
-    prices = get_price(item)
-    normal_price = prices[0]
-    sale_price = prices[1]
+    normal_price, sale_price = get_price(item)
     rating = get_rating(item)
-    promo = get_promo(item)
-    out_of_stock = promo[1]
-    promo = promo[0]
+    promo, out_of_stock = get_promo(item)
     cursor.execute('''
     INSERT INTO items (store, item, brand, shipping, normal_price, sale_price, rating, promo, out_of_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
     (store, name, brand, shipping, normal_price, sale_price, rating, promo, out_of_stock))
