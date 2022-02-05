@@ -25,8 +25,8 @@ yarn-error.log*
 # virtual environment
 .venv
 
-# produced .csv file
-*.csv
+# produced .db file
+*.db
 
 
 
