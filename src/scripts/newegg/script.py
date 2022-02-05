@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import sqlite3 as sql
-from time import sleep
+from time import sleep, strftime, localtime
 from webdriver_manager.chrome import ChromeDriverManager
 
 # TODO: remove this -- IMPORT TO TIME SCRIPT
@@ -21,14 +21,13 @@ service = Service(executable_path=ChromeDriverManager().install())
 chrome_options = Options()
 chrome_options.page_load_strategy = 'normal'
 driver = webdriver.Chrome(service=service, options=chrome_options)
-# driver.get("https://www.newegg.ca/p/pl?PageSize=60&N=100007708")
 driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
 # ------------------------------------------------------------------------
 
 
 def newegg():
     more_items = True
-    conn = sql.connect('src/databases/items2.db')
+    conn = sql.connect(f"src/databases/{strftime('%M%H%d%m%y', localtime())}.db")
     c = conn.cursor()
     c.execute("""
         CREATE TABLE items (store TEXT, item TEXT, brand TEXT, shipping TEXT, normal_price, sale_price, rating TEXT, promo TEXT, out_of_stock TEXT)
