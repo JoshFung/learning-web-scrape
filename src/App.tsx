@@ -1,3 +1,5 @@
+import MainBar from 'components/Header'
+import MainBody from 'components/MainBody';
 import ape from 'sony ape.jpg';
 import './App.css';
 
@@ -5,9 +7,10 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={ape} alt="logo" />
+        <MainBar />
+        <MainBody />
         <p>
-          god give me strength to keep trying react
+          recovery takes time !
         </p>
       </header>
     </div>
