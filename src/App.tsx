@@ -6,13 +6,13 @@ import './App.css';
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <MainBar />
-        <MainBody />
-        <p>
-          recovery takes time !
-        </p>
-      </header>
+      {/* <header className="App-header"> */}
+      <MainBar />
+      <MainBody />
+      <p>
+        recovery takes time !
+      </p>
+      {/* </header> */}
     </div>
   );
 }
