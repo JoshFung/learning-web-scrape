@@ -7,3 +7,4 @@
 - webdriver-manager (pip install webdriver-manager)
 - sqlite3 (should come with Python)
 - express-generator
+- cors
