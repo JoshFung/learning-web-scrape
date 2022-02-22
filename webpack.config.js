@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    entry: ["./client/src/App.tsx", "./api/app.js"],
+    entry: ["./client/src/App.tsx", "./api/www"],
     output: {
         filename: './bundle.js'
     },
