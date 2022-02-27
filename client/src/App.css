@@ -61,10 +61,28 @@
 .infoButton {
     margin-right: 0;
     margin-left: auto;
+    border: none;
 }
 
 .themeButton {
+    margin-right: 0;
+    margin-left: auto;
+    border: none;
+}
 
+.topBarLine {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.searchBar {
+    border: none;
+    text-align: center;
+    width: 100%;
+    outline: none;
+    height: 5vh;
+    font-size: 4vh;
+    color: red;
 }
 
 @keyframes App-logo-spin {

@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 
 function ButtonList(props: any) {
     return (
@@ -11,10 +11,13 @@ function ButtonList(props: any) {
 
 export default function MainBar() {
     return (
-        <header className="topBar">
-            <ButtonList visibility="hidden"/>
-            <div className="title">GPU TRACKER</div>
-            <ButtonList/>
-        </header>
+        <>
+            <header className="topBar">
+                <ButtonList visibility="hidden"/>
+                <div className="title">GPU TRACKER</div>
+                <ButtonList/>
+            </header>
+            <hr className="topBarLine"/>
+        </>
     );
 }
