@@ -17,12 +17,17 @@ from datetime import datetime
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------
-service = Service(executable_path=ChromeDriverManager().install())
+# TODO: Temporary Service() while Chromedriverv103 is broken
+# service = Service(executable_path=ChromeDriverManager().install())
+service = Service(executable_path=r"/Users/joshfung/Documents/PyCharm/learning-web-scrape/chromedriver")
+
 chrome_options = Options()
+# TODO: Remove when switching off beta of Chrome and Chromedriver
+chrome_options.binary_location = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
 chrome_options.page_load_strategy = 'normal'
 driver = webdriver.Chrome(service=service, options=chrome_options)
-# driver.get("https://www.newegg.ca/p/pl?PageSize=60&N=100007708")
 driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
+# driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48/Page-7?Tid=7708&PageSize=96")
 # ------------------------------------------------------------------------
 
 
@@ -43,6 +48,7 @@ def newegg():
                       columns=['Store', 'Item', 'Brand', 'Normal Price', 'Sale Price', 'Rating', 'Shipping',
                                'Promo', 'Out of Stock'])
     df.to_csv('out.csv')
+    # df.to_json('out.json')
 
 
 def get_all_items(soup, entries):
@@ -74,16 +80,33 @@ def get_shipping(item, entry):
 
 
 def get_price(item, entry):
-    item_normal_price = item.find('li', {'class': 'price-was'})
-    # not on sale (empty array)
-    if item_normal_price is None or item_normal_price.getText() == '':
-        item_normal_price = item.find('li', {'class': 'price-current'}).getText()
-        item_normal_price = item_normal_price.split()[0] if item_normal_price != '' else False
+    # item_normal_price = item.find('li', {'class': 'price-was'})
+    # # not on sale (empty array)
+    # if item_normal_price is None or item_normal_price.getText() == '':
+    #     item_normal_price = item.find('li', {'class': 'price-current'}).getText()
+    #     item_normal_price = item_normal_price.split()[0] if item_normal_price != '' else False
+    # else:
+    #     item_normal_price = item_normal_price.getText().split()[0]
+    #     item_sale_price = item.find('li', {'class': 'price-current'}).getText().split()[0]
+    #     entry.update({'Sale Price': item_sale_price})
+
+    was_price = item.find('li', {'class': 'price-was'})
+    current_price = item.find('li', {'class': 'price-current'})
+
+    if was_price != '' and current_price != '':
+        normal_price = was_price
+        sale_price = current_price
+    elif current_price != '':
+        normal_price = current_price
+        sale_price = None
+    elif was_price != '':
+        normal_price = was_price
+        sale_price = None
     else:
-        item_normal_price = item_normal_price.getText().split()[0]
-        item_sale_price = item.find('li', {'class': 'price-current'}).getText().split()[0]
-        entry.update({'Sale Price': item_sale_price})
-    entry.update({'Normal Price': item_normal_price})
+        normal_price = None
+        sale_price = None
+    entry.update({'Normal Price': normal_price})
+    entry.update({'Sale Price': sale_price})
 
 
 def get_rating(item, entry):
@@ -137,7 +160,7 @@ def next_page():
     # sleep(randint(1, 5))
 
     if current_page != total_pages:
-        driver.find_element(By.XPATH, '/html/body/div[7]/div[3]/section/div[1]/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
+        driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
         return True
     return False
 
