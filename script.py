@@ -32,7 +32,7 @@ import re
 # ------------------------------------------------------------------------
 
 
-app = Celery("tasks")
+app = Celery("scrape")
 app.conf.beat_schedule = {
     # executes every 10 minute
     'scraping-task-ten-min': {
