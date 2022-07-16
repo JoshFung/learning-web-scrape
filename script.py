@@ -2,6 +2,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from celery import Celery
 from celery.schedules import crontab
+from datetime import datetime
+from dotenv import load_dotenv
 from random import randint
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -14,11 +16,6 @@ import os
 from time import sleep
 from webdriver_manager.chrome import ChromeDriverManager
 import re
-
-# TODO: remove this -- IMPORT TO TIME SCRIPT
-from datetime import datetime
-
-start_time = datetime.now()
 
 # ------------------------------------------------------------------------
 # # TODO: Temporary Service() while Chromedriverv103 is broken
@@ -47,8 +44,10 @@ app.conf.beat_schedule = {
 
 @app.task
 def scrape():
+    load_dotenv()
+
     # service = Service(executable_path=ChromeDriverManager().install())
-    service = Service(executable_path=r"/Users/joshfung/Documents/PyCharm/learning-web-scrape/chromedriver")
+    service = Service(executable_path=os.getenv("CHROMEDRIVER_PATH"))
 
     chrome_options = Options()
     # TODO: Remove when switching off beta of Chrome and Chromedriver
@@ -204,9 +203,3 @@ def next_page(driver):
         driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
         return True
     return False
-
-
-# newegg()
-
-# TODO: remove this
-print(f"TIME: {datetime.now() - start_time}")
