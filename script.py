@@ -1,5 +1,7 @@
 import pandas as pd
 from bs4 import BeautifulSoup
+from celery import Celery
+from celery.schedules import crontab
 from random import randint
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -8,8 +10,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import os
 from time import sleep
 from webdriver_manager.chrome import ChromeDriverManager
+import re
 
 # TODO: remove this -- IMPORT TO TIME SCRIPT
 from datetime import datetime
@@ -17,40 +21,72 @@ from datetime import datetime
 start_time = datetime.now()
 
 # ------------------------------------------------------------------------
-# TODO: Temporary Service() while Chromedriverv103 is broken
-# service = Service(executable_path=ChromeDriverManager().install())
-service = Service(executable_path=r"/Users/joshfung/Documents/PyCharm/learning-web-scrape/chromedriver")
-
-chrome_options = Options()
-# TODO: Remove when switching off beta of Chrome and Chromedriver
-chrome_options.binary_location = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
-chrome_options.page_load_strategy = 'normal'
-driver = webdriver.Chrome(service=service, options=chrome_options)
-driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
-# driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48/Page-7?Tid=7708&PageSize=96")
+# # TODO: Temporary Service() while Chromedriverv103 is broken
+# # service = Service(executable_path=ChromeDriverManager().install())
+# service = Service(executable_path=r"/Users/joshfung/Documents/PyCharm/learning-web-scrape/chromedriver")
+#
+# chrome_options = Options()
+# # TODO: Remove when switching off beta of Chrome and Chromedriver
+# chrome_options.binary_location = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
+# chrome_options.page_load_strategy = 'normal'
+# driver = webdriver.Chrome(service=service, options=chrome_options)
+# driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
+# # driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48/Page-7?Tid=7708&PageSize=96")
 # ------------------------------------------------------------------------
 
 
-def newegg():
+app = Celery("tasks")
+app.conf.beat_schedule = {
+    # executes every 10 minute
+    'scraping-task-ten-min': {
+        'task': 'script.scrape',
+        'schedule': crontab(minute='*/10')
+    }
+}
+
+
+@app.task
+def scrape():
+    # service = Service(executable_path=ChromeDriverManager().install())
+    service = Service(executable_path=r"/Users/joshfung/Documents/PyCharm/learning-web-scrape/chromedriver")
+
+    chrome_options = Options()
+    # TODO: Remove when switching off beta of Chrome and Chromedriver
+    chrome_options.binary_location = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
+    chrome_options.page_load_strategy = 'normal'
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48?Tid=7708&PageSize=96")
+    # driver.get("https://www.newegg.ca/Desktop-Graphics-Cards/SubCategory/ID-48/Page-7?Tid=7708&PageSize=96")
+
+    newegg(driver)
+
+    driver.close()
+    driver.quit()
+
+
+@app.task
+def newegg(driver):
     more_items = True
     item_list = []
     while more_items:
 
         # TODO: first delay
-        # sleep(randint(1, 5))
+        sleep(randint(1, 5))
 
         html = driver.page_source
         soup = BeautifulSoup(html, 'lxml')
         get_all_items(soup, item_list)
-        more_items = next_page()
+        more_items = next_page(driver)
 
     df = pd.DataFrame(item_list,
                       columns=['Store', 'Item', 'Brand', 'Normal Price', 'Sale Price', 'Rating', 'Shipping',
                                'Promo', 'Out of Stock'])
-    df.to_csv('out.csv')
-    # df.to_json('out.json')
+    if not os.path.exists('data'):
+        os.mkdir('data')
+    df.to_csv(fr'data/out-{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv')
 
 
+@app.task
 def get_all_items(soup, entries):
     all_items = soup.find_all('div', {'class': 'item-container'})
 
@@ -62,11 +98,13 @@ def get_all_items(soup, entries):
             entries.append(item_entry)
 
 
+@app.task
 def get_name(item, entry):
     item_name = item.find('a', {'class': 'item-title'}).text
     entry.update({'Item': item_name})
 
 
+@app.task
 def get_brand(item, entry):
     item_brand = item.find('a', {'class': 'item-brand'})
     if item_brand is not None:
@@ -74,33 +112,32 @@ def get_brand(item, entry):
     entry.update({'Brand': item_brand})
 
 
+@app.task
 def get_shipping(item, entry):
     item_shipping = item.find('li', {'class': 'price-ship'}).getText().partition(" ")[0]
     entry.update({'Shipping': item_shipping})
 
 
-def get_price(item, entry):
-    # item_normal_price = item.find('li', {'class': 'price-was'})
-    # # not on sale (empty array)
-    # if item_normal_price is None or item_normal_price.getText() == '':
-    #     item_normal_price = item.find('li', {'class': 'price-current'}).getText()
-    #     item_normal_price = item_normal_price.split()[0] if item_normal_price != '' else False
-    # else:
-    #     item_normal_price = item_normal_price.getText().split()[0]
-    #     item_sale_price = item.find('li', {'class': 'price-current'}).getText().split()[0]
-    #     entry.update({'Sale Price': item_sale_price})
+@app.task
+def extract_num(string):
+    no_commas = string.replace(",", "")
+    filtered_string = re.findall(r"\d+\.\d+", no_commas)
+    return filtered_string[0]
 
-    was_price = item.find('li', {'class': 'price-was'})
-    current_price = item.find('li', {'class': 'price-current'})
+
+@app.task
+def get_price(item, entry):
+    was_price = item.find('li', {'class': 'price-was'}).getText()
+    current_price = item.find('li', {'class': 'price-current'}).getText()
 
     if was_price != '' and current_price != '':
-        normal_price = was_price
-        sale_price = current_price
+        normal_price = extract_num(was_price)
+        sale_price = extract_num(current_price)
     elif current_price != '':
-        normal_price = current_price
+        normal_price = extract_num(current_price)
         sale_price = None
     elif was_price != '':
-        normal_price = was_price
+        normal_price = extract_num(was_price)
         sale_price = None
     else:
         normal_price = None
@@ -109,6 +146,7 @@ def get_price(item, entry):
     entry.update({'Sale Price': sale_price})
 
 
+@app.task
 def get_rating(item, entry):
     item_rating = item.find('i', {'class': 'rating'})
     if item_rating is not None:
@@ -117,6 +155,7 @@ def get_rating(item, entry):
         entry.update({'Rating': item_rating + ' (' + num_ratings + ')'})
 
 
+@app.task
 def get_promo(item, entry):
     item_promo = item.find('p', {'class': 'item-promo'})
     if item_promo is not None:
@@ -130,6 +169,7 @@ def get_promo(item, entry):
         entry.update({'Out of Stock': 'False'})
 
 
+@app.task
 def item_details(item):
     item_entry = {}
     item_entry.update({'Store': 'Newegg'})
@@ -142,7 +182,8 @@ def item_details(item):
     return item_entry
 
 
-def next_page():
+@app.task
+def next_page(driver):
     # make sure it loads in (otherwise it can throw an error)
     try:
         WebDriverWait(driver, 25).until(EC.presence_of_element_located((By.CLASS_NAME, 'list-tool-pagination-text')))
@@ -157,7 +198,7 @@ def next_page():
     print(current_page)
 
     # TODO: second delay
-    # sleep(randint(1, 5))
+    sleep(randint(1, 5))
 
     if current_page != total_pages:
         driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
@@ -165,10 +206,7 @@ def next_page():
     return False
 
 
-newegg()
-
-# close chromedriver
-driver.quit()
+# newegg()
 
 # TODO: remove this
 print(f"TIME: {datetime.now() - start_time}")
