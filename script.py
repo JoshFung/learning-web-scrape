@@ -32,7 +32,7 @@ import re
 # ------------------------------------------------------------------------
 
 
-app = Celery("scrape")
+app = Celery()
 app.conf.beat_schedule = {
     # executes every 10 minute
     'scraping-task-ten-min': {
@@ -65,9 +65,10 @@ def scrape():
 
 @app.task
 def newegg(driver):
-    more_items = True
+    current_page = 1
+    total_pages = find_pages(driver)
     item_list = []
-    while more_items:
+    while current_page <= total_pages :
 
         # TODO: first delay
         sleep(randint(1, 5))
@@ -75,14 +76,20 @@ def newegg(driver):
         html = driver.page_source
         soup = BeautifulSoup(html, 'lxml')
         get_all_items(soup, item_list)
-        more_items = next_page(driver)
+        next_page(driver)
+
+        # TODO: remove this eventually
+        print(current_page)
+
+        current_page += 1
 
     df = pd.DataFrame(item_list,
                       columns=['Store', 'Item', 'Brand', 'Normal Price', 'Sale Price', 'Rating', 'Shipping',
                                'Promo', 'Out of Stock'])
     if not os.path.exists('data'):
         os.mkdir('data')
-    df.to_csv(fr'data/out-{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv')
+    # df.to_csv(fr'data/out-{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv')
+    df.to_json(fr'data/out-{datetime.now().strftime("%Y%m%d-%H%M%S")}.json')
 
 
 @app.task
@@ -182,6 +189,13 @@ def item_details(item):
 
 
 @app.task
+def find_pages(driver):
+    page_index = driver.find_element(By.CLASS_NAME, 'list-tool-pagination-text').text.split(' ')[1]
+    # current_page = page_index.split('/')[0]
+    return int(page_index.split('/')[1])
+
+
+@app.task
 def next_page(driver):
     # make sure it loads in (otherwise it can throw an error)
     try:
@@ -189,17 +203,7 @@ def next_page(driver):
     except TimeoutException:
         driver.quit()
 
-    page_index = driver.find_element(By.CLASS_NAME, 'list-tool-pagination-text').text.split(' ')[1]
-    current_page = page_index.split('/')[0]
-    total_pages = page_index.split('/')[1]
-
-    # TODO: remove this eventually
-    print(current_page)
-
     # TODO: second delay
     sleep(randint(1, 5))
 
-    if current_page != total_pages:
-        driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
-        return True
-    return False
+    driver.find_element(By.XPATH, '/html/body/div[8]/div[3]/section/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div[4]/div/div/div[11]/button').click()
