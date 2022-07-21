@@ -17,3 +17,13 @@ Furthermore, set the path to the chromedriver file in the `.env` file.
    2. `-B` tells it to run on the given beat schedule (10 minutes per run)
    3. `-l INFO` tells it log information
 
+### Alternative Steps Without a Schedule
+
+1. Do the same first three steps as above
+2. Start up the Celery service using: `celery -A script worker -l INFO`
+   - Note that we don't use `-B` as we don't want it on a service
+3. Open up a third terminal and enter the Python console (just use `python`)
+4. Import the `scrape()` function by using: `from script import scrape`
+5. Run `scrape()` by using: `scrape.delay()`
+   - `delay()` sends a task message to RabbitMQ which further tells Celery it has a job to do
+     - Further, note that `delay()` is a shortcut for `apply_async()` as it does not have execution options
